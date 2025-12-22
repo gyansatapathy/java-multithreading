@@ -3,6 +3,7 @@ package com.example.advanced;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -59,7 +60,8 @@ import java.util.*;
  * - Print when each runner completes each leg
  * - Ensure fair progression (no runner gets too far ahead)
  * 
- * Hint: CountDownLatch for final completion, CyclicBarrier for intermediate sync
+ * Hint: CountDownLatch for final completion, CyclicBarrier for intermediate
+ * sync
  * 
  * ============================================================================
  * 
@@ -123,109 +125,96 @@ import java.util.*;
  */
 
 public class AdvancedMultithreadingAssignment {
-    
+
     // ===== TASK 1: Bank Account Transfer with Deadlock Prevention =====
     // TODO: Implement Account class
     // TODO: Implement Bank class with transfer method
     // TODO: Create test with 10 accounts and 5 threads doing random transfers
-    
-    
+
     // ===== TASK 2: Thread Pool with Callable and Future =====
     // TODO: Create URLFetcher Callable class
     // TODO: Use ExecutorService to manage 5 worker threads
     // TODO: Submit 20 tasks and collect Futures
     // TODO: Handle timeouts with get(long timeout, TimeUnit unit)
-    
-    
+
     // ===== TASK 3: Synchronization Barriers =====
     // TODO: Create Runner class using CyclicBarrier for leg checkpoints
     // TODO: Use CountDownLatch for overall race completion
     // TODO: Create 4 runners each doing 3 legs
-    
-    
+
     // ===== TASK 4: Resource Pool with Semaphore =====
     // TODO: Create ResourcePool class with Semaphore
     // TODO: Create Worker class that acquires/releases resources
     // TODO: Create 10 workers contending for 5 resources
-    
-    
+
     // ===== TASK 5: Read-Write Lock Pattern =====
     // TODO: Create Cache class with ReentrantReadWriteLock
     // TODO: Create Reader and Writer classes
     // TODO: 7 readers and 3 writers accessing shared cache
-    
-    
+
     // ===== TASK 6: Producer-Consumer with BlockingQueue =====
     // TODO: Create AdvancedProducer class using BlockingQueue
     // TODO: Create AdvancedConsumer class using BlockingQueue
     // TODO: Use poison pill or CountDownLatch for shutdown coordination
-    
-    
+
     // ===== TASK 7: Atomic Variables & Lock-Free Programming =====
     // TODO: Create SynchronizedCounter using synchronized
     // TODO: Create AtomicCounter using AtomicInteger
     // TODO: Benchmark both approaches with 10 threads, 1000 increments each
-    
-    
+
     public static void main(String[] args) {
         System.out.println("=== ADVANCED Java Multithreading Assignment ===\n");
-        
+
         // TASK 1: Uncomment when ready
         System.out.println("TASK 1: Bank Account Transfer with Deadlock Prevention");
         runTask1();
-        
-        
+
         // TASK 2: Uncomment when ready
         System.out.println("\nTASK 2: Thread Pool with Callable and Future");
         runTask2();
-        
-        
+
         // TASK 3: Uncomment when ready
-        // System.out.println("\nTASK 3: Synchronization Barriers");
-        // runTask3();
-        
-        
+        System.out.println("\nTASK 3: Synchronization Barriers");
+        runTask3();
+
         // TASK 4: Uncomment when ready
         // System.out.println("\nTASK 4: Resource Pool with Semaphore");
         // runTask4();
-        
-        
+
         // TASK 5: Uncomment when ready
         // System.out.println("\nTASK 5: Read-Write Lock Pattern");
         // runTask5();
-        
-        
+
         // TASK 6: Uncomment when ready
         // System.out.println("\nTASK 6: Producer-Consumer with BlockingQueue");
         // runTask6();
-        
-        
+
         // TASK 7: Uncomment when ready
         // System.out.println("\nTASK 7: Atomic Variables & Lock-Free Programming");
         // runTask7();
     }
-    
+
     private static void runTask1() {
         Bank bank = new Bank();
-        for(int i = 1; i<=10; i++){
+        for (int i = 1; i <= 10; i++) {
             Account account = new Account(i, 1000);
             bank.addAccount(account);
         }
-        
+
         System.out.println("Initial total balance: $" + bank.getTotalBalance());
         System.out.println("Starting 5 threads with 20 random transfers each...\n");
-        
+
         // 5 threads doing 20 random transactions from account id 1-10
         List<Thread> threads = new ArrayList<>();
         Random rand = new Random();
         long startTime = System.currentTimeMillis();
-        
-        for(int i = 0; i<5; i++){
-            Thread t = new Thread(()->{
-                for(int j = 0; j<20; j++){
+
+        for (int i = 0; i < 5; i++) {
+            Thread t = new Thread(() -> {
+                for (int j = 0; j < 20; j++) {
                     int fromId = rand.nextInt(10) + 1;
                     int toId = rand.nextInt(10) + 1;
-                    while(toId == fromId){
+                    while (toId == fromId) {
                         toId = rand.nextInt(10) + 1;
                     }
                     int amount = rand.nextInt(200) + 1;
@@ -235,56 +224,120 @@ public class AdvancedMultithreadingAssignment {
             threads.add(t);
             t.start();
         }
-        
+
         // Wait for all threads to complete
-        for(Thread t : threads) {
+        for (Thread t : threads) {
             try {
                 t.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        
+
         long endTime = System.currentTimeMillis();
-        
+
         System.out.println("\n=== TASK 1 RESULTS ===");
         System.out.println("All transfers completed!");
         System.out.println("Time taken: " + (endTime - startTime) + " ms");
         System.out.println("Final total balance: $" + bank.getTotalBalance());
         System.out.println("Expected total: $10000");
-        
-        if(bank.getTotalBalance() == 10000) {
+
+        if (bank.getTotalBalance() == 10000) {
             System.out.println("✓ SUCCESS - No money lost, no deadlock!");
         } else {
             System.out.println("✗ FAIL - Balance mismatch!");
         }
         System.out.println();
     }
-    private static void runTask2() { 
+
+    private static void runTask2() {
         ExecutorService executorService = Executors.newFixedThreadPool(5);
         IntStream.rangeClosed(1, 20)
-        .boxed()
-        .map(v -> {
-            return executorService.submit(new UrlFetcher("someurl"+v.toString()));
-        }).map(future -> {
-            try {
-                return future.get(400, TimeUnit.MILLISECONDS); // may timeout
-            } catch (TimeoutException e) {
-                // handle timeout
-                return "timeout";
-            } catch (ExecutionException e) {
-                // underlying task threw
-                return "error: " + e.getCause();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return "interrupted";
-            }
-        })
-        .forEach(System.out::println);
+                .boxed()
+                .map(v -> {
+                    return executorService.submit(new UrlFetcher("someurl" + v.toString()));
+                }).map(future -> {
+                    try {
+                        return future.get(400, TimeUnit.MILLISECONDS); // may timeout
+                    } catch (TimeoutException e) {
+                        // handle timeout
+                        return "timeout";
+                    } catch (ExecutionException e) {
+                        // underlying task threw
+                        return "error: " + e.getCause();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return "interrupted";
+                    }
+                })
+                .forEach(System.out::println);
         executorService.shutdownNow();
-        
+
     }
-    // private static void runTask3() { }
+
+    private static void runTask3() {
+        int numRunners = 4;
+        long raceStartTime = System.currentTimeMillis(); // ✅ Global timer
+        long[][] legTimes = new long[numRunners][3]; // ✅ Thread-safe array
+
+        CountDownLatch raceCompletionLatch = new CountDownLatch(numRunners);
+
+        CyclicBarrier leg1Barrier = new CyclicBarrier(numRunners, () -> printLegRanking(legTimes, 0, 1, "Leg 1")); // Leg
+                                                                                                                   // 0
+                                                                                                                   // in
+                                                                                                                   // array
+
+        CyclicBarrier leg2Barrier = new CyclicBarrier(numRunners, () -> printLegRanking(legTimes, 1, 2, "Leg 2"));
+
+        CyclicBarrier leg3Barrier = new CyclicBarrier(numRunners, () -> printLegRanking(legTimes, 2, 3, "Leg 3"));
+
+        List<Thread> runners = new ArrayList<>();
+        System.out.println("Starting the race with " + numRunners + " runners...\n");
+
+        for (int i = 1; i <= numRunners; i++) {
+            Runner runner = new Runner(Integer.toString(i), raceCompletionLatch,
+                    leg1Barrier, leg2Barrier, leg3Barrier, raceStartTime, legTimes);
+            Thread t = new Thread(runner);
+            runners.add(t);
+            t.start();
+        }
+
+        try {
+            raceCompletionLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+
+        long totalTime = System.currentTimeMillis() - raceStartTime;
+        System.out.println("\n=== TASK 3 RESULTS ===");
+        System.out.println("All runners have finished the race!");
+        System.out.printf("Total race time: %d ms%n", totalTime);
+    }
+
+    // HELPER METHOD - Add this method
+    private static void printLegRanking(long[][] legTimes, int legIndex, int legNumber, String legName) {
+    long minTime = Long.MAX_VALUE, maxTime = 0;
+    int firstRunner = -1, lastRunner = -1;
+    
+    for(int r = 0; r < 4; r++) {
+        long time = legTimes[r][legIndex];
+        if(time < minTime) {
+            minTime = time;
+            firstRunner = r + 1;
+        }
+        if(time > maxTime) {
+            maxTime = time;
+            lastRunner = r + 1;
+        }
+    }
+    
+    // ✅ FIXED: %d for long integers, not %.0f
+    System.out.printf("%s: Runner %d first (%d ms), Runner %d last (%d ms)%n", 
+                      legName, firstRunner, minTime, lastRunner, maxTime);
+}
+
+
     // private static void runTask4() { }
     // private static void runTask5() { }
     // private static void runTask6() { }
