@@ -1,6 +1,8 @@
 package com.example.advanced;
 
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.*;
 
 /**
@@ -169,13 +171,13 @@ public class AdvancedMultithreadingAssignment {
         System.out.println("=== ADVANCED Java Multithreading Assignment ===\n");
         
         // TASK 1: Uncomment when ready
-        // System.out.println("TASK 1: Bank Account Transfer with Deadlock Prevention");
-        // runTask1();
+        System.out.println("TASK 1: Bank Account Transfer with Deadlock Prevention");
+        runTask1();
         
         
         // TASK 2: Uncomment when ready
-        // System.out.println("\nTASK 2: Thread Pool with Callable and Future");
-        // runTask2();
+        System.out.println("\nTASK 2: Thread Pool with Callable and Future");
+        runTask2();
         
         
         // TASK 3: Uncomment when ready
@@ -203,9 +205,85 @@ public class AdvancedMultithreadingAssignment {
         // runTask7();
     }
     
-    // TODO: Implement these helper methods
-    // private static void runTask1() { }
-    // private static void runTask2() { }
+    private static void runTask1() {
+        Bank bank = new Bank();
+        for(int i = 1; i<=10; i++){
+            Account account = new Account(i, 1000);
+            bank.addAccount(account);
+        }
+        
+        System.out.println("Initial total balance: $" + bank.getTotalBalance());
+        System.out.println("Starting 5 threads with 20 random transfers each...\n");
+        
+        // 5 threads doing 20 random transactions from account id 1-10
+        List<Thread> threads = new ArrayList<>();
+        Random rand = new Random();
+        long startTime = System.currentTimeMillis();
+        
+        for(int i = 0; i<5; i++){
+            Thread t = new Thread(()->{
+                for(int j = 0; j<20; j++){
+                    int fromId = rand.nextInt(10) + 1;
+                    int toId = rand.nextInt(10) + 1;
+                    while(toId == fromId){
+                        toId = rand.nextInt(10) + 1;
+                    }
+                    int amount = rand.nextInt(200) + 1;
+                    bank.transfer(fromId, toId, amount);
+                }
+            });
+            threads.add(t);
+            t.start();
+        }
+        
+        // Wait for all threads to complete
+        for(Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        long endTime = System.currentTimeMillis();
+        
+        System.out.println("\n=== TASK 1 RESULTS ===");
+        System.out.println("All transfers completed!");
+        System.out.println("Time taken: " + (endTime - startTime) + " ms");
+        System.out.println("Final total balance: $" + bank.getTotalBalance());
+        System.out.println("Expected total: $10000");
+        
+        if(bank.getTotalBalance() == 10000) {
+            System.out.println("✓ SUCCESS - No money lost, no deadlock!");
+        } else {
+            System.out.println("✗ FAIL - Balance mismatch!");
+        }
+        System.out.println();
+    }
+    private static void runTask2() { 
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        IntStream.rangeClosed(1, 20)
+        .boxed()
+        .map(v -> {
+            return executorService.submit(new UrlFetcher("someurl"+v.toString()));
+        }).map(future -> {
+            try {
+                return future.get(400, TimeUnit.MILLISECONDS); // may timeout
+            } catch (TimeoutException e) {
+                // handle timeout
+                return "timeout";
+            } catch (ExecutionException e) {
+                // underlying task threw
+                return "error: " + e.getCause();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return "interrupted";
+            }
+        })
+        .forEach(System.out::println);
+        executorService.shutdownNow();
+        
+    }
     // private static void runTask3() { }
     // private static void runTask4() { }
     // private static void runTask5() { }
