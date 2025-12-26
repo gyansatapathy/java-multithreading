@@ -186,8 +186,8 @@ public class AdvancedMultithreadingAssignment {
         runTask5();
 
         // TASK 6: Uncomment when ready
-        // System.out.println("\nTASK 6: Producer-Consumer with BlockingQueue");
-        // runTask6();
+        System.out.println("\nTASK 6: Producer-Consumer with BlockingQueue");
+        runTask6();
 
         // TASK 7: Uncomment when ready
         // System.out.println("\nTASK 7: Atomic Variables & Lock-Free Programming");
@@ -355,7 +355,7 @@ public class AdvancedMultithreadingAssignment {
             }
         }
     }
-    
+
     private static void runTask5() {
         System.out.println("\nTASK 5: Read-Write Lock Pattern");
         ReadWriteCache cache = new ReadWriteCache();
@@ -394,6 +394,42 @@ public class AdvancedMultithreadingAssignment {
         System.out.println("All readers and writers completed.");
     }
 
-    // private static void runTask6() { }
+    private static void runTask6() {
+        BlockingQueue<String> queue = new LinkedBlockingQueue<>(10);
+        final int TOTAL_ITEMS = 30;
+        final String POISON_PILL = "POISON_PILL";
+
+        long startTime = System.currentTimeMillis();
+        List<Thread> threads = new ArrayList<>();
+
+        // 3 producers
+        for (int i = 1; i <= 3; i++) {
+            Thread producer = new Thread(new AdvancedProducer(queue, TOTAL_ITEMS / 3, POISON_PILL), "Producer-" + i);
+            threads.add(producer);
+            producer.start();
+        }
+
+        // 2 consumers
+        for (int i = 1; i <= 2; i++) {
+            Thread consumer = new Thread(new AdvancedConsumer(queue, POISON_PILL), "Consumer-" + i);
+            threads.add(consumer);
+            consumer.start();
+        }
+
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
+        System.out.println("\n=== TASK 6 RESULTS ===");
+        System.out.println("Total time: " + duration + " ms");
+        System.out.printf("Throughput: %.2f items/second%n", (TOTAL_ITEMS * 1000.0) / duration);
+    }
     // private static void runTask7() { }
 }
