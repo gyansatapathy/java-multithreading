@@ -182,8 +182,8 @@ public class AdvancedMultithreadingAssignment {
         // runTask4();
 
         // TASK 5: Uncomment when ready
-        // System.out.println("\nTASK 5: Read-Write Lock Pattern");
-        // runTask5();
+        System.out.println("\nTASK 5: Read-Write Lock Pattern");
+        runTask5();
 
         // TASK 6: Uncomment when ready
         // System.out.println("\nTASK 6: Producer-Consumer with BlockingQueue");
@@ -317,28 +317,27 @@ public class AdvancedMultithreadingAssignment {
 
     // HELPER METHOD - Add this method
     private static void printLegRanking(long[][] legTimes, int legIndex, int legNumber, String legName) {
-    long minTime = Long.MAX_VALUE, maxTime = 0;
-    int firstRunner = -1, lastRunner = -1;
-    
-    for(int r = 0; r < 4; r++) {
-        long time = legTimes[r][legIndex];
-        if(time < minTime) {
-            minTime = time;
-            firstRunner = r + 1;
+        long minTime = Long.MAX_VALUE, maxTime = 0;
+        int firstRunner = -1, lastRunner = -1;
+
+        for (int r = 0; r < 4; r++) {
+            long time = legTimes[r][legIndex];
+            if (time < minTime) {
+                minTime = time;
+                firstRunner = r + 1;
+            }
+            if (time > maxTime) {
+                maxTime = time;
+                lastRunner = r + 1;
+            }
         }
-        if(time > maxTime) {
-            maxTime = time;
-            lastRunner = r + 1;
-        }
+
+        // ✅ FIXED: %d for long integers, not %.0f
+        System.out.printf("%s: Runner %d first (%d ms), Runner %d last (%d ms)%n",
+                legName, firstRunner, minTime, lastRunner, maxTime);
     }
-    
-    // ✅ FIXED: %d for long integers, not %.0f
-    System.out.printf("%s: Runner %d first (%d ms), Runner %d last (%d ms)%n", 
-                      legName, firstRunner, minTime, lastRunner, maxTime);
-}
 
-
-    private static void runTask4() { 
+    private static void runTask4() {
         ResourcePool resourcePool = new ResourcePool(5);
         List<Thread> workers = new ArrayList<>();
 
@@ -348,16 +347,53 @@ public class AdvancedMultithreadingAssignment {
             workers.add(worker);
         }
 
-       for(Thread w: workers){
-        try {
-            w.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for (Thread w : workers) {
+            try {
+                w.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-       }
     }
+    
+    private static void runTask5() {
+        System.out.println("\nTASK 5: Read-Write Lock Pattern");
+        ReadWriteCache cache = new ReadWriteCache();
+
+        // Pre-populate cache with some keys
+        for (int i = 1; i <= 5; i++) {
+            cache.put("key" + i, "init" + i);
+        }
+
+        List<Thread> threads = new ArrayList<>();
+
+        // Start 3 writers
+        for (int w = 1; w <= 3; w++) {
+            Thread writer = new Thread(new Writer(cache, w), "Writer-" + w);
+            threads.add(writer);
+            writer.start();
+        }
+
+        // Start 7 readers
+        for (int r = 1; r <= 7; r++) {
+            Thread reader = new Thread(new Reader(cache, r), "Reader-" + r);
+            threads.add(reader);
+            reader.start();
+        }
+
+        // Wait for all to finish
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("\n=== TASK 5 RESULTS ===");
+        System.out.println("All readers and writers completed.");
     }
-    // private static void runTask5() { }
+
     // private static void runTask6() { }
     // private static void runTask7() { }
 }
